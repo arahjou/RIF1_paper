@@ -1,0 +1,849 @@
+---
+title: "RIF1 Paper"
+output: html_document
+date: "2023-07-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# RIF1 Paper
+
+### Number of differentially expressed genes
+Could you please let me know the N° genes with log2 FC < -1 and > 1 at 48, 72, and 96 h?
+
+
+```{r}
+library(dplyr)
+t48h <- read.table(file = "DESeq2_48h_IgG1_IgG2b.txt",header = F)
+colnames(t48h) = c("GeneID", "Base.mean", "log2_FC", "StdErr", "Wall.Stats", "p.value", "P.adj")
+t48h %>%
+  filter(log2_FC >= 1 & P.adj <= 0.05) %>%
+  summarise(n_distinct(GeneID))
+
+t48h %>%
+  filter(log2_FC <= -1 & P.adj <= 0.05) %>%
+  summarise(n_distinct(GeneID))
+
+t72h <- read.table(file = "DESeq2_72h.txt",header = F)
+colnames(t72h) = c("GeneID", "Base.mean", "log2_FC", "StdErr", "Wall.Stats", "p.value", "P.adj")
+
+t72h %>%
+  filter(log2_FC >= 1 & P.adj <= 0.05) %>%
+  summarise(n_distinct(GeneID))
+
+t72h %>%
+  filter(log2_FC <= -1 & P.adj <= 0.05) %>%
+  summarise(n_distinct(GeneID))
+
+t96h <- read.table(file = "DESeq2_96h.txt",header = F)
+colnames(t96h) = c("GeneID", "Base.mean", "log2_FC", "StdErr", "Wall.Stats", "p.value", "P.adj")
+
+t96h %>%
+  filter(log2_FC >= 1 & P.adj <= 0.05) %>%
+  summarise(n_distinct(GeneID))
+
+t96h %>%
+  filter(log2_FC <= -1 & P.adj <= 0.05) %>%
+  summarise(n_distinct(GeneID))
+
+
+```
+
+
+## Figure 2
+
+### Volcano plots
+
+#### Libraries
+```{r librariesI}
+library(ggplot2)
+library(ggrepel)
+library(ggpubr)
+library(cowplot)
+```
+
+
+```{r VolcanoPlotsF2, echo=FALSE}
+#============== 20230705  Volcano plots=======================
+
+#================48h=============
+
+#load data
+mydata <- read.table(file = "DESeq2_48h_IgG1_IgG2b.txt",header = F)
+colnames(mydata) = c("GeneID", "Base.mean", "log2_FC", "StdErr", "Wall.Stats", "p.value", "P.adj")
+
+mydata$P.adj.log = -log10(mydata$P.adj)
+
+Sig <- subset(mydata, mydata$P.adj <= 0.05 & mydata$log2_FC < 0)
+Sig_1 <- subset(mydata, mydata$P.adj <= 0.05 & mydata$log2_FC > 0)
+#Sig_2 <- subset(mydata, mydata$GeneID == "Prdm1" | mydata$GeneID == "Xbp1" | mydata$GeneID == "Irf4" |
+#                  mydata$GeneID == "Pax5" | mydata$GeneID == "Bach2" | mydata$GeneID == "Ebf1" | mydata$GeneID == "Foxo1")
+Sig_2 <- subset(mydata, mydata$GeneID == "Prdm1")
+
+
+#Lower part of the plots
+p <- ggplot(mydata, aes(x= log2_FC, y= P.adj.log)) + geom_point(alpha = 0.2, color = "dimgray")
+
+p = p + geom_point(data = Sig, color ="#27a8cc", alpha = 0.6)
+
+p = p + geom_point(data = Sig_1, color ="red", alpha = 0.6)
+p = p + geom_point(data = Sig_2, colour="black", size=3, alpha=0.3)
+p = p  + geom_vline(xintercept = 0, size = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), size=0.5, linetype = "dashed", color = "blue") +
+  #geom_text_repel(data= Sig_2, label = Sig_2$GeneID, min.segment.length = 0, seed = 42, box.padding = 0.01) +
+  geom_text_repel(data= Sig_2, label = Sig_2$GeneID, seed = 42, box.padding = 0.5, max.overlaps = Inf) +
+  ylim(0,20) + xlim(-2, 2) + theme_cowplot()
+p
+ggsave(
+  p,
+  file = "/Users/arahjou/Desktop/Figures/48h_Down.pdf",
+  width = 16,
+  height = 12,
+  units = c("cm"),
+  dpi = 300
+  )
+
+#Uper part of the plots
+p<- ggplot(mydata, aes(x= log2_FC, y= P.adj.log)) + geom_point(alpha = 0.2, color = "dimgray")
+
+p = p + geom_point(data = Sig, color ="#27a8cc", alpha = 0.6)
+
+p = p + geom_point(data = Sig_1, color ="red", alpha = 0.6)
+p = p + geom_point(data = Sig_2, colour="black", size=3, alpha=0.2)
+p = p  + geom_vline(xintercept = 0, size = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), size=0.5, linetype = "dashed", color = "blue") +
+  geom_text_repel(data= Sig_2, label = Sig_2$GeneID, min.segment.length = 0, seed = 42, box.padding = 0.5) +
+  ylim(20,80) + xlim(-2, 2) + theme_cowplot()
+p
+ggsave(
+  p,
+  file = "/Users/arahjou/Desktop/Figures/48_Uper.pdf",
+  width = 16,
+  height = 4,
+  units = c("cm"),
+  dpi = 300
+)
+
+#================72h=============
+
+#load data
+mydata <- read.table(file = "DESeq2_72H.txt",header = F)
+colnames(mydata) = c("GeneID", "Base.mean", "log2_FC", "StdErr", "Wall.Stats", "p.value", "P.adj")
+
+mydata$P.adj.log <- -log10(mydata$P.adj)
+
+Sig <- subset(mydata, mydata$P.adj <= 0.05 & mydata$log2_FC < 0)
+Sig_1 <- subset(mydata, mydata$P.adj <= 0.05 & mydata$log2_FC > 0)
+#Sig_2 <- subset(mydata, mydata$GeneID == "Prdm1" | mydata$GeneID == "Xbp1" | mydata$GeneID == "Irf4" |
+#                  mydata$GeneID == "Pax5" | mydata$GeneID == "Bach2" | mydata$GeneID == "Ebf1" | mydata$GeneID == "Foxo1")
+Sig_2 <- subset(mydata, mydata$GeneID == "Prdm1")
+
+
+#Lower part of the plots
+p <- ggplot(mydata, aes(x= log2_FC, y= P.adj.log)) + geom_point(alpha = 0.2, color = "dimgray")
+
+p = p + geom_point(data = Sig, color ="#27a8cc", alpha = 0.6)
+
+p = p + geom_point(data = Sig_1, color ="red", alpha = 0.6)
+p = p + geom_point(data = Sig_2, colour="black", size=3, alpha=0.3)
+p = p  + geom_vline(xintercept = 0, size = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), size= 0.5, linetype = "dashed", color = "blue") +
+  #geom_text_repel(data= Sig_2, label = Sig_2$GeneID, min.segment.length = 0, seed = 42, box.padding = 0.01) +
+  geom_text_repel(data= Sig_2, label = Sig_2$GeneID, seed = 42, box.padding = 0.5, max.overlaps = Inf) +
+  ylim(0,20) + xlim(-2, 2) + theme_cowplot()
+p
+ggsave(
+  p,
+  file = "/Users/arahjou/Desktop/Figures/72h_Down.pdf",
+  width = 16,
+  height = 12,
+  units = c("cm"),
+  dpi = 300
+)
+
+#Uper part of the plots
+p<- ggplot(mydata, aes(x= log2_FC, y= P.adj.log)) + geom_point(alpha = 0.2, color = "dimgray")
+
+p = p + geom_point(data = Sig, color ="#27a8cc", alpha = 0.6)
+
+p = p + geom_point(data = Sig_1, color ="red", alpha = 0.6)
+p = p + geom_point(data = Sig_2, colour="black", size=3, alpha=0.2)
+p = p  + geom_vline(xintercept = 0, size = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), size= 0.5, linetype = "dashed", color = "blue") +
+  geom_text_repel(data= Sig_2, label = Sig_2$GeneID, min.segment.length = 0, seed = 42, box.padding = 0.5) +
+  ylim(20,80) + xlim(-2, 2) + theme_cowplot()
+p
+ggsave(
+  p,
+  file = "/Users/arahjou/Desktop/Figures/72_Uper.pdf",
+  width = 16,
+  height = 4,
+  units = c("cm"),
+  dpi = 300
+)
+
+
+#================96h=============
+
+#load data
+mydata <- read.table(file = "DESeq2_96H.txt",header = F)
+colnames(mydata) = c("GeneID", "Base.mean", "log2_FC", "StdErr", "Wall.Stats", "p.value", "P.adj")
+
+mydata$P.adj.log <- -log10(mydata$P.adj)
+
+Sig <- subset(mydata, mydata$P.adj <= 0.05 & mydata$log2_FC < 0)
+Sig_1 <- subset(mydata, mydata$P.adj <= 0.05 & mydata$log2_FC > 0)
+#Sig_2 <- subset(mydata, mydata$GeneID == "Prdm1" | mydata$GeneID == "Xbp1" | mydata$GeneID == "Irf4" |
+#                  mydata$GeneID == "Pax5" | mydata$GeneID == "Bach2" | mydata$GeneID == "Ebf1" | mydata$GeneID == "Foxo1")
+Sig_2 <- subset(mydata, mydata$GeneID == "Prdm1")
+
+
+#Lower part of the plots
+p <- ggplot(mydata, aes(x= log2_FC, y= P.adj.log)) + geom_point(alpha = 0.2, color = "dimgray")
+
+p = p + geom_point(data = Sig, color ="#27a8cc", alpha = 0.6)
+
+p = p + geom_point(data = Sig_1, color ="red", alpha = 0.6)
+p = p + geom_point(data = Sig_2, colour="black", size=3, alpha=0.3)
+p = p  + geom_vline(xintercept = 0, size = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), size= 0.5, linetype = "dashed", color = "blue") +
+  #geom_text_repel(data= Sig_2, label = Sig_2$GeneID, min.segment.length = 0, seed = 42, box.padding = 0.01) +
+  geom_text_repel(data= Sig_2, label = Sig_2$GeneID, seed = 42, box.padding = 0.5, max.overlaps = Inf) +
+  ylim(0,20) + xlim(-2, 2) + theme_cowplot()
+p
+ggsave(
+  p,
+  file = "/Users/arahjou/Desktop/Figures/96h_Down.pdf",
+  width = 16,
+  height = 12,
+  units = c("cm"),
+  dpi = 300
+)
+
+#Uper part of the plots
+p<- ggplot(mydata, aes(x= log2_FC, y= P.adj.log)) + geom_point(alpha = 0.2, color = "dimgray")
+
+p = p + geom_point(data = Sig, color ="#27a8cc", alpha = 0.6)
+
+p = p + geom_point(data = Sig_1, color ="red", alpha = 0.6)
+p = p + geom_point(data = Sig_2, colour="black", size=3, alpha=0.2)
+p = p  + geom_vline(xintercept = 0, size = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), size= 0.5, linetype = "dashed", color = "blue") +
+  geom_text_repel(data= Sig_2, label = Sig_2$GeneID, min.segment.length = 0, seed = 42, box.padding = 0.5) +
+  ylim(20,80) + xlim(-2, 2) + theme_cowplot()
+p
+ggsave(
+  p,
+  file = "/Users/arahjou/Desktop/Figures/96_Uper.pdf",
+  width = 16,
+  height = 4,
+  units = c("cm"),
+  dpi = 300
+)
+```
+### Figure 5
+
+#### Libraries
+```{r librariesII}
+library(tidyverse)
+library(cowplot)
+```
+
+```{r VolcanoPlotsF5, echo=FALSE}
+#48h
+
+mydata <- read.table(file = "DESeq2_48H_IgG1_IgG2b.txt",header = F)
+colnames(mydata) = c("GeneID", "Base.mean", "log2_FC", "StdErr", "Wall.Stats", "p.value", "P.adj")
+
+mydata$sig <- -log10(mydata$P.adj)
+
+Blimp1 <- read.csv("Blimp1.csv", header = T)
+Blimp1_Active  <- Blimp1$Active
+Blimp1_Active  <- na.omit(Blimp1$Active)
+Blimp1_Supressed  <- Blimp1$Sup
+
+Activated <- mydata[mydata$GeneID %in% Blimp1_Active, ]
+Suppressed <- mydata[mydata$GeneID %in% Blimp1_Supressed, ]
+
+
+#Activated_Uper
+
+ggplot(mydata, aes(x= log2_FC, y=sig, colour=sig)) +
+  geom_point(color="gray", alpha = 0.5) + geom_point(data = Activated, color ="#ff6600") +
+  ylim(10, 80) + xlim (-2, 2)+ 
+  geom_vline(xintercept =  0, linewidth = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), linewidth=0.5, linetype = "dashed", color = "black") +
+  theme_cowplot()#+
+  #geom_label_repel(data= Activated, label = Activated$Name, vjust= 1)
+
+ggsave(
+  file = "/Users/arahjou/Desktop/Figures/48h_ActBlimp1_Uper.pdf",
+  width = 16,
+  height = 4,
+  units = c("cm"),
+  dpi = 300
+)
+
+#Activated_Lower
+
+ggplot(mydata, aes(x= log2_FC, y=sig, colour=sig)) +
+  geom_point(color="gray", alpha = 0.5) + geom_point(data = Activated, color ="#ff6600") +
+  ylim(-1, 10) + xlim (-2, 2)+ 
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), linewidth=0.5, linetype = "dashed", color = "black") +
+  theme_cowplot() #+
+#geom_label_repel(data= Activated, label = Activated$Name, vjust= 1)
+
+ggsave(
+  file = "/Users/arahjou/Desktop/Figures/48h_ActBlimp1_lower.pdf",
+  width = 16,
+  height = 12,
+  units = c("cm"),
+  dpi = 300
+)
+#Repressed_Uper
+#Occupied by Rif1 in red
+ggplot(mydata, aes(x= log2_FC, y=sig, colour=sig)) +
+  geom_point(color="gray", alpha = 0.5) + geom_point(data = Suppressed, color ="#278731") +
+  ylim(10, 80) + xlim (-2, 2)+ 
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), linewidth=0.5, linetype = "dashed", color = "black") +
+  theme_cowplot() #+
+#geom_label_repel(data= Activated, label = Activated$Name, vjust= 1)
+ggsave(
+  file = "/Users/arahjou/Desktop/Figures/48h_RepBlimp1_Uper.pdf",
+  width = 16,
+  height = 4,
+  units = c("cm"),
+  dpi = 300
+)
+#Repressed_lower
+#Occupied by Rif1 in red
+ggplot(mydata, aes(x= log2_FC, y=sig, colour=sig)) +
+  geom_point(color="gray", alpha = 0.5) + geom_point(data = Suppressed, color ="#278731") +
+  ylim(-1, 10) + xlim (-2, 2)+ 
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), linewidth=0.5, linetype = "dashed", color = "black") +
+  theme_cowplot() #+
+#geom_label_repel(data= Activated, label = Activated$Name, vjust= 1)
+
+ggsave(
+  file = "/Users/arahjou/Desktop/Figures/48h_RepBlimp1_Lower.pdf",
+  width = 16,
+  height = 12,
+  units = c("cm"),
+  dpi = 300
+)
+
+#72h
+
+mydata <- read.table(file = "DESeq2_72H.txt",header = F)
+colnames(mydata) = c("GeneID", "Base.mean", "log2_FC", "StdErr", "Wall.Stats", "p.value", "P.adj")
+
+mydata$sig <- -log10(mydata$P.adj)
+
+Blimp1 <- read.csv("Blimp1.csv", header = T)
+Blimp1_Active  <- Blimp1$Active
+Blimp1_Active  <- na.omit(Blimp1$Active)
+Blimp1_Supressed  <- Blimp1$Sup
+
+Activated <- mydata[mydata$GeneID %in% Blimp1_Active, ]
+Suppressed <- mydata[mydata$GeneID %in% Blimp1_Supressed, ]
+
+
+#Activated_Uper
+
+ggplot(mydata, aes(x= log2_FC, y=sig, colour=sig)) +
+  geom_point(color="gray", alpha = 0.5) + geom_point(data = Activated, color ="#ff6600") +
+  ylim(10, 80) + xlim (-2, 2)+ 
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log(10), linewidth=0.5, linetype = "dashed", color = "black") +
+  theme_cowplot()#+
+  #geom_label_repel(data= Activated, label = Activated$Name, vjust= 1)
+
+ggsave(
+  file = "/Users/arahjou/Desktop/Figures/72h_ActBlimp1_Uper.pdf",
+  width = 16,
+  height = 4,
+  units = c("cm"),
+  dpi = 300
+)
+
+#Activated_Lower
+
+ggplot(mydata, aes(x= log2_FC, y=sig, colour=sig)) +
+  geom_point(color="gray", alpha = 0.5) + geom_point(data = Activated, color ="#ff6600") +
+  ylim(-1, 10) + xlim (-2, 2)+ 
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), linewidth= 0.5, linetype = "dashed", color = "black") +
+  theme_cowplot() #+
+#geom_label_repel(data= Activated, label = Activated$Name, vjust= 1)
+
+ggsave(
+  file = "/Users/arahjou/Desktop/Figures/72h_ActBlimp1_lower.pdf",
+  width = 16,
+  height = 12,
+  units = c("cm"),
+  dpi = 300
+)
+#Repressed_Uper
+#Occupied by Rif1 in red
+ggplot(mydata, aes(x= log2_FC, y=sig, colour=sig)) +
+  geom_point(color="gray", alpha = 0.5) + geom_point(data = Suppressed, color ="#278731") +
+  ylim(10, 80) + xlim (-2, 2)+ 
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), linewidth= 0.5, linetype = "dashed", color = "black") +
+  theme_cowplot() #+
+#geom_label_repel(data= Activated, label = Activated$Name, vjust= 1)
+ggsave(
+  file = "/Users/arahjou/Desktop/Figures/72_RepBlimp1_Uper.pdf",
+  width = 16,
+  height = 4,
+  units = c("cm"),
+  dpi = 300
+)
+#Repressed_lower
+#Occupied by Rif1 in red
+ggplot(mydata, aes(x= log2_FC, y=sig, colour=sig)) +
+  geom_point(color="gray", alpha = 0.5) + geom_point(data = Suppressed, color ="#278731") +
+  ylim(-1, 10) + xlim (-2, 2)+ 
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), linewidth=0.5, linetype = "dashed", color = "black") +
+  theme_cowplot() #+
+#geom_label_repel(data= Activated, label = Activated$Name, vjust= 1)
+
+ggsave(
+  file = "/Users/arahjou/Desktop/Figures/72h_RepBlimp1_Lower.pdf",
+  width = 16,
+  height = 12,
+  units = c("cm"),
+  dpi = 300
+)
+
+#96h
+
+mydata <- read.table(file = "DESeq2_96H.txt",header = F)
+colnames(mydata) = c("GeneID", "Base.mean", "log2_FC", "StdErr", "Wall.Stats", "p.value", "P.adj")
+
+mydata$sig <- -log10(mydata$P.adj)
+
+Blimp1 <- read.csv("Blimp1.csv", header = T)
+Blimp1_Active  <- Blimp1$Active
+Blimp1_Active  <- na.omit(Blimp1$Active)
+Blimp1_Supressed  <- Blimp1$Sup
+
+Activated <- mydata[mydata$GeneID %in% Blimp1_Active, ]
+Suppressed <- mydata[mydata$GeneID %in% Blimp1_Supressed, ]
+
+
+#Activated_Uper
+
+ggplot(mydata, aes(x= log2_FC, y=sig, colour=sig)) +
+  geom_point(color="gray", alpha = 0.5) + geom_point(data = Activated, color ="#ff6600") +
+  ylim(10, 80) + xlim (-2, 2)+ 
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), linewidth=0.5, linetype = "dashed", color = "black") +
+  theme_cowplot()#+
+  #geom_label_repel(data= Activated, label = Activated$Name, vjust= 1)
+
+ggsave(
+  file = "/Users/arahjou/Desktop/Figures/96h_ActBlimp1_Uper.pdf",
+  width = 16,
+  height = 4,
+  units = c("cm"),
+  dpi = 300
+)
+
+#Activated_Lower
+
+ggplot(mydata, aes(x= log2_FC, y=sig, colour=sig)) +
+  geom_point(color="gray", alpha = 0.5) + geom_point(data = Activated, color ="#ff6600") +
+  ylim(-1, 10) + xlim (-2, 2)+ 
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = 1.3, linewidth=0.5, linetype = "dashed", color = "black") +
+  theme_cowplot() #+
+#geom_label_repel(data= Activated, label = Activated$Name, vjust= 1)
+
+ggsave(
+  file = "/Users/arahjou/Desktop/Figures/96h_ActBlimp1_lower.pdf",
+  width = 16,
+  height = 12,
+  units = c("cm"),
+  dpi = 300
+)
+#Repressed_Uper
+#Occupied by Rif1 in red
+ggplot(mydata, aes(x= log2_FC, y=sig, colour=sig)) +
+  geom_point(color="gray", alpha = 0.5) + geom_point(data = Suppressed, color ="#278731") +
+  ylim(10, 80) + xlim (-2, 2)+ 
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = 1.3, linewidth=0.5, linetype = "dashed", color = "black") +
+  theme_cowplot() #+
+#geom_label_repel(data= Activated, label = Activated$Name, vjust= 1)
+ggsave(
+  file = "/Users/arahjou/Desktop/Figures/96h_RepBlimp1_Uper.pdf",
+  width = 16,
+  height = 4,
+  units = c("cm"),
+  dpi = 300
+)
+#Repressed_lower
+#Occupied by Rif1 in red
+ggplot(mydata, aes(x= log2_FC, y=sig, colour=sig)) +
+  geom_point(color="gray", alpha = 0.5) + geom_point(data = Suppressed, color ="#278731") +
+  ylim(-1, 10) + xlim (-2, 2)+ 
+  geom_vline(xintercept = 0, linewidth = 0.5, linetype = "dashed") + 
+  geom_hline(yintercept = -log10(0.05), linewidth=0.5, linetype = "dashed", color = "black") +
+  theme_cowplot() #+
+#geom_label_repel(data= Activated, label = Activated$Name, vjust= 1)
+
+ggsave(
+  file = "/Users/arahjou/Desktop/Figures/96h_RepBlimp1_Lower.pdf",
+  width = 16,
+  height = 12,
+  units = c("cm"),
+  dpi = 300
+)
+```
+
+
+### MA plots
+
+```{r MA}
+#48h
+
+upregulated = subset(mydata, mydata$P.adj <= 0.05 & mydata$log2_FC >= 0)
+downregulated = subset(mydata, mydata$P.adj <= 0.05 & mydata$log2_FC <= 0)
+
+ggplot(mydata, aes(x = log10(Base.mean), y = log2_FC)) + 
+  geom_point(alpha = 0.2, color = "dimgray") + geom_point(data = upregulated, color ="red", alpha = 0.4) + 
+  geom_point(data = downregulated, color ="#27a8cc", alpha = 0.4) + ylim(-2, 4) + theme_cowplot()
+```
+
+
+## FIgure 2 and S2
+
+
+```{r}
+# Load packages
+library(readr)
+library(tidyverse)
+library(eulerr)
+
+# Import your dataframe
+df = read.table(pipe("pbpaste"), sep="\t", header=TRUE) # for a data frame
+
+# Convert each column to a list, removing NA values
+list1 <- df[[1]] %>% na.omit() %>% as.list()
+list2 <- df[[2]] %>% na.omit() %>% as.list()
+list3 <- df[[3]] %>% na.omit() %>% as.list()
+list4 <- df[[4]] %>% na.omit() %>% as.list()
+list5 <- df[[5]] %>% na.omit() %>% as.list()
+list6 <- df[[6]] %>% na.omit() %>% as.list()
+list7 <- df[[7]] %>% na.omit() %>% as.list()
+list8 <- df[[8]] %>% na.omit() %>% as.list()
+list9 <- df[[9]] %>% na.omit() %>% as.list()
+list10 <- df[[10]] %>% na.omit() %>% as.list()
+list11 <- df[[11]] %>% na.omit() %>% as.list()
+list12 <- df[[12]] %>% na.omit() %>% as.list()
+list13 <- df[[13]] %>% na.omit() %>% as.list()
+list14 <- df[[14]] %>% na.omit() %>% as.list()
+list15 <- df[[15]] %>% na.omit() %>% as.list()
+list16 <- df[[16]] %>% na.omit() %>% as.list()
+list17 <- df[[17]] %>% na.omit() %>% as.list()
+list18 <- df[[18]] %>% na.omit() %>% as.list()
+
+# Combine lists into a named list for euler
+euler_input <- list(t96H_Up = list4,
+                    ActvsMaBcells_Up = list10,
+                    PBvsMaBcells_Up = list12,
+                    PCvsMaBcells_Up = list14) # Up to 7 lists
+
+# Generate venn diagram
+fit <- euler(euler_input)
+p = plot(fit, quantities = TRUE)
+p
+
+ggsave(
+  p,
+  file = "/Users/arahjou/Desktop/Figures/Venn_96h_Up.pdf",
+  width = 16,
+  height = 16,
+  units = c("cm"),
+  dpi = 300
+)
+
+```
+
+
+## Figure 5s
+
+
+## Table S2
+
+```{r TableS2}
+#==============Comparing list ============
+t24_up_ActBcell = intersect(list1, list9)
+t24_up_PB = intersect(list1, list11)
+t24_up_PC = intersect(list1, list13)
+t72_up_ActBcell = intersect(list3, list9)
+t72_up_PB = intersect(list3, list11)
+t72_up_PC = intersect(list3, list13)
+t96_up_ActBcell = intersect(list5, list9)
+t96_up_PB = intersect(list5, list11)
+t96_up_PC = intersect(list5, list13)
+t24_down_ActBcell = intersect(list2, list9)
+t24_down_PB = intersect(list2, list11)
+t24_down_PC = intersect(list2, list13)
+t72_down_ActBcell = intersect(list4, list9)
+t72_down_PB = intersect(list4, list11)
+t72_down_PC = intersect(list4, list13)
+t96_down_ActBcell = intersect(list6, list9)
+t96_down_PB = intersect(list6, list11)
+t96_down_PC = intersect(list6, list13)
+
+
+# names
+names = c("t24_up_ActBcell",
+            "t24_up_PB",
+            "t24_up_PC",
+            "t72_up_ActBcell",
+            "t72_up_PB",
+            "t72_up_PC",
+            "t96_up_ActBcell",
+            "t96_up_PB",
+            "t96_up_PC",
+            "t24_down_ActBcell",
+            "t24_down_PB",
+            "t24_down_PC",
+            "t72_down_ActBcell",
+            "t72_down_PB",
+            "t72_down_PC",
+            "t96_down_ActBcell",
+            "t96_down_PB",
+            "t96_down_PC")
+
+
+# names
+bigList = list(t24_up_ActBcell,
+          t24_up_PB,
+          t24_up_PC,
+          t72_up_ActBcell,
+          t72_up_PB,
+          t72_up_PC,
+          t96_up_ActBcell,
+          t96_up_PB,
+          t96_up_PC,
+          t24_down_ActBcell,
+          t24_down_PB,
+          t24_down_PC,
+          t72_down_ActBcell,
+          t72_down_PB,
+          t72_down_PC,
+          t96_down_ActBcell,
+          t96_down_PB,
+          t96_down_PC)
+
+
+# Unlist nested lists if exist and then get the maximum length
+bigList <- lapply(bigList, unlist)
+max_length <- max(sapply(bigList, length))
+
+# Pad the lists with NA to make them equal length
+bigList <- lapply(bigList, function(x) {
+  c(x, rep(NA, max_length - length(x)))
+})
+
+# Convert list of vectors to a data frame
+df <- data.frame(do.call(cbind, bigList))
+
+# Write the data frame to a CSV file
+write.csv(df, file = "my_data.csv", row.names = FALSE)
+```
+
+
+## S5 upset plot
+
+```{r S5-upset}
+library(UpSetR)
+
+data <- list(t48H_Up = list1, 
+             t72H_Up = list3, 
+             t96H_Up = list5,
+             ActBlimp1 = list17)
+
+upset(fromList(data), nsets = 12, nintersects = 30, mb.ratio = c(0.5, 0.5))
+
+
+data <- list(t48H_Down = list2,
+             t72H_Down = list4,
+             t96H_Down = list6,
+             RepBlimp1 = list18)
+
+upset(fromList(data), nsets = 12, nintersects = 30, mb.ratio = c(0.5, 0.5))
+
+
+
+#========
+
+
+#============48H===============
+
+
+data <- list(t48H_Up = list1,
+             Occu_Act_Blimp1 = list18,
+             Occu_RIF1 = list15)
+
+
+upset(fromList(data), nsets = 3, nintersects = 30, mb.ratio = c(0.5, 0.5), 
+      intersections = list(list("t48H_Up", "Occu_Act_Blimp1"), 
+                           list("Occu_Act_Blimp1"), 
+                           list("t48H_Up", "Occu_RIF1", "Occu_Act_Blimp1")))
+
+
+
+
+data <- list(t48H_Down = list2,
+             Occu_Rep_Blimp1 = list19,
+             Occu_RIF1 = list15)
+
+upset(fromList(data), nsets = 3, nintersects = 30, mb.ratio = c(0.5, 0.5), 
+      intersections = list(list("t48H_Down", "Occu_Rep_Blimp1"), 
+                           list("Occu_Rep_Blimp1"), 
+                           list("t48H_Down", "Occu_RIF1", "Occu_Rep_Blimp1")))
+
+#============72H===============
+
+
+data <- list(t72H_Up = list3,
+             Occu_Act_Blimp1 = list18,
+             Occu_RIF1 = list15)
+
+
+upset(fromList(data), nsets = 3, nintersects = 30, mb.ratio = c(0.5, 0.5), 
+      intersections = list(list("t72H_Up", "Occu_Act_Blimp1"), 
+                           list("Occu_Act_Blimp1"), 
+                           list("t72H_Up", "Occu_RIF1", "Occu_Act_Blimp1")))
+
+
+
+
+data <- list(t72H_Down = list4,
+             Occu_Rep_Blimp1 = list19,
+             Occu_RIF1 = list15)
+
+upset(fromList(data), nsets = 3, nintersects = 30, mb.ratio = c(0.5, 0.5), 
+      intersections = list(list("t72H_Down", "Occu_Rep_Blimp1"), 
+                           list("Occu_Rep_Blimp1"), 
+                           list("t72H_Down", "Occu_RIF1", "Occu_Rep_Blimp1")))
+
+#============96H===============
+
+
+
+data <- list(t96H_Up = list5,
+             Occu_Act_Blimp1 = list18,
+             Occu_RIF1 = list15)
+
+
+upset(fromList(data), nsets = 3, nintersects = 30, mb.ratio = c(0.5, 0.5), 
+      intersections = list(list("t96H_Up", "Occu_Act_Blimp1"), 
+                           list("Occu_Act_Blimp1"), 
+                           list("t96H_Up", "Occu_RIF1", "Occu_Act_Blimp1")))
+
+
+
+  
+data <- list(t96H_Down = list6,
+             Occu_Rep_Blimp1 = list19,
+             Occu_RIF1 = list15)
+
+upset(fromList(data), nsets = 3, nintersects = 30, mb.ratio = c(0.5, 0.5), 
+      intersections = list(list("t96H_Down", "Occu_Rep_Blimp1"), 
+                           list("Occu_Rep_Blimp1"), 
+                           list("t96H_Down", "Occu_RIF1", "Occu_Rep_Blimp1")))
+```
+
+## Table S4
+
+```{r TableS4}
+#==============Comparing list ============
+ActBLIMP1 = list17
+ActBLIMP1_DEGs48hUp = intersect(list17, list1)
+ActBLIMP1_DEGs48hUp_RIF1 = intersect(ActBLIMP1_DEGs48hUp, list15)
+
+ActBLIMP1 = list17
+ActBLIMP1_DEGs72hUp = intersect(list17, list3)
+ActBLIMP1_DEGs72hUp_RIF1 = intersect(ActBLIMP1_DEGs72hUp, list15)
+
+ActBLIMP1 = list17
+ActBLIMP1_DEGs96hUp = intersect(list17, list5)
+ActBLIMP1_DEGs96hUp_RIF1 = intersect(ActBLIMP1_DEGs96hUp, list15)
+#================
+RepBLIMP1 = list18
+RepBLIMP1_DEGs48hDown = intersect(list18, list2)
+RepBLIMP1_DEGs48hDown_RIF1 = intersect(RepBLIMP1_DEGs48hDown, list15)
+
+RepBLIMP1 = list18
+RepBLIMP1_DEGs72hDown = intersect(list18, list4)
+RepBLIMP1_DEGs72hDown_RIF1 = intersect(RepBLIMP1_DEGs72hDown, list15)
+
+RepBLIMP1 = list18
+RepBLIMP1_DEGs96hDown = intersect(list18, list6)
+RepBLIMP1_DEGs96hDown_RIF1 = intersect(RepBLIMP1_DEGs96hDown, list15)
+
+
+# names
+
+
+
+names = c("ActBLIMP1", 
+          "ActBLIMP1_DEGs48hUp",
+          "ActBLIMP1_DEGs48hUp_RIF1",
+          "ActBLIMP1_DEGs72hUp",
+          "ActBLIMP1_DEGs72hUp_RIF1",
+          "ActBLIMP1_DEGs96hUp",
+          "ActBLIMP1_DEGs96hUp_RIF1",
+          "RepBLIMP1",
+          "RepBLIMP1_DEGs48hDown",
+          "RepBLIMP1_DEGs48hDown_RIF1",
+          "RepBLIMP1_DEGs72hDown",
+          "RepBLIMP1_DEGs72hDown_RIF1",
+          "RepBLIMP1_DEGs96hDown",
+          "RepBLIMP1_DEGs96hDown_RIF1")
+
+
+# names
+bigList = list(ActBLIMP1, 
+          ActBLIMP1_DEGs48hUp,
+          ActBLIMP1_DEGs48hUp_RIF1,
+          ActBLIMP1_DEGs72hUp,
+          ActBLIMP1_DEGs72hUp_RIF1,
+          ActBLIMP1_DEGs96hUp,
+          ActBLIMP1_DEGs96hUp_RIF1,
+          RepBLIMP1,
+          RepBLIMP1_DEGs48hDown,
+          RepBLIMP1_DEGs48hDown_RIF1,
+          RepBLIMP1_DEGs72hDown,
+          RepBLIMP1_DEGs72hDown_RIF1,
+          RepBLIMP1_DEGs96hDown,
+          RepBLIMP1_DEGs96hDown_RIF1)
+
+
+# Unlist nested lists if exist and then get the maximum length
+bigList <- lapply(bigList, unlist)
+max_length <- max(sapply(bigList, length))
+
+# Pad the lists with NA to make them equal length
+bigList <- lapply(bigList, function(x) {
+  c(x, rep(NA, max_length - length(x)))
+})
+
+# Convert list of vectors to a data frame
+df <- data.frame(do.call(cbind, bigList))
+
+# Write the data frame to a CSV file
+write.csv(df, file = "Table_S4.csv", row.names = FALSE)
+```
