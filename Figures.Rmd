@@ -847,3 +847,235 @@ df <- data.frame(do.call(cbind, bigList))
 # Write the data frame to a CSV file
 write.csv(df, file = "Table_S4.csv", row.names = FALSE)
 ```
+
+
+
+```{r}
+# Load file
+mydata <- read.csv("/Users/arahjou/Library/CloudStorage/OneDrive-Personal/2023\ Projects/Rif1\ Project/Normalized\ Counts/Universe_all_list.csv", header = TRUE)
+
+# Function to perform hypergeometric test
+hypergeometric_test <- function(list1, list2, universe) {
+  # Convert gene names to lowercase
+  list1 <- tolower(list1)
+  list2 <- tolower(list2)
+  universe <- tolower(universe)
+  
+  shared_genes <- intersect(list1, list2)
+  num_shared_genes <- length(shared_genes)
+  
+  num_genes_list1 <- length(list1)
+  num_genes_list2 <- length(list2)
+  
+  num_genes_universe <- length(universe)
+  
+  p_value <- phyper(num_shared_genes - 1, num_genes_list1, num_genes_universe - num_genes_list1, num_genes_list2, lower.tail = FALSE)
+  
+  return(p_value)
+}
+
+# Convert the universe gene names to lowercase
+universe <- tolower(mydata$Universe)
+
+# Define the gene lists
+lists <- list(
+  RIF1 = tolower(mydata$RIF1),
+  UP_48H = tolower(mydata$UP_48H),
+  Down_48H = tolower(mydata$Down_48H),
+  UP_72H = tolower(mydata$UP_72H),
+  DOWN_72H = tolower(mydata$DOWN_72H),
+  UP_96H = tolower(mydata$UP_96H),
+  Down_96H = tolower(mydata$Down_96H),
+  Blimp1_Activator = tolower(mydata$Blimp1_Activator),
+  Blimp1_Repressor = tolower(mydata$Blimp1_Repressor)
+)
+
+# Remove empty values from gene lists
+lists <- lapply(lists, function(x) x[x != ""])
+
+# Perform pairwise hypergeometric tests and apply Bonferroni correction
+results <- list()
+num_lists <- length(lists)
+p_values <- numeric()
+counter <- 1
+
+for (i in 1:(num_lists-1)) {
+  for (j in (i+1):num_lists) {
+    list1_name <- names(lists)[i]
+    list2_name <- names(lists)[j]
+    p_value <- hypergeometric_test(lists[[i]], lists[[j]], universe)
+    p_values <- c(p_values, p_value)
+    results[[counter]] <- list(list1 = list1_name, list2 = list2_name, p_value = p_value)
+    counter <- counter + 1
+  }
+}
+
+# Apply Bonferroni correction
+p_values_adj <- p.adjust(p_values, method = "bonferroni")
+
+# Print adjusted p-values with list pair names
+cat("Pairwise Hypergeometric Test Results (Bonferroni-adjusted p-values):\n")
+for (i in 1:length(p_values_adj)) {
+  list1_name <- results[[i]]$list1
+  list2_name <- results[[i]]$list2
+  p_value_adj <- p_values_adj[i]
+  cat(list1_name, "vs", list2_name, ": ", p_value_adj, "\n")
+}
+
+
+#===============
+# Calculate -log10(p_values_adj)
+log_p_values_adj <- -log10(p_values_adj)
+
+# Pairwise comparison names
+pairwise_comp <- paste(sapply(results, function(x) x$list1), "vs", sapply(results, function(x) x$list2))
+
+# Plot -log10(p_values_adj)
+plot(log_p_values_adj, 
+     main = "Pairwise Hypergeometric Test Results",
+     xlab = "Pairwise comparisons",
+     ylab = "-log10(Adjusted P-values)",
+     xaxt = "n",  # don't show the x-axis labels by default
+     pch = 19,    # use solid circle as point character
+     col = "blue" # color points blue
+)
+
+# Custom x-axis labels
+axis(1, at = 1:length(pairwise_comp), labels = pairwise_comp, las = 2)  # 'las = 2' makes the labels perpendicular to the axis
+
+
+#==============
+
+library(UpSetR)
+
+
+#We need to construct a binary incidence matrix for the upset plot:
+# Convert lists to a binary incidence matrix
+binary_matrix <- Reduce(function(df, i) {
+  list_name <- names(lists)[i]
+  df[[list_name]] <- ifelse(df$gene %in% lists[[i]], 1, 0)
+  return(df)
+}, 1:length(lists), df = data.frame(gene = universe))
+
+# Remove the 'gene' column
+binary_matrix$gene <- NULL
+
+#Now you can create an upset plot with UpSetR:
+
+# Create upset plot
+upset(binary_matrix, order.by = "freq", sets.bar.color = "#56B4E9", 
+      matrix.color = "black", mainbar.y.label = "Gene set size", 
+      sets.x.label = "Number of intersections")
+
+#===============for all genes 20240312===========================
+# Load file
+mydata <- read.csv("/Users/probio/Desktop/Hypergeometic\ test/my_data_2024.csv", header = TRUE)
+
+# Function to perform hypergeometric test
+hypergeometric_test <- function(list1, list2, universe) {
+  # Convert gene names to lowercase
+  list1 <- tolower(list1)
+  list2 <- tolower(list2)
+  universe <- tolower(universe)
+  
+  shared_genes <- intersect(list1, list2)
+  num_shared_genes <- length(shared_genes)
+  
+  num_genes_list1 <- length(list1)
+  num_genes_list2 <- length(list2)
+  
+  num_genes_universe <- length(universe)
+  
+  p_value <- phyper(num_shared_genes - 1, num_genes_list1, num_genes_universe - num_genes_list1, num_genes_list2, lower.tail = FALSE)
+  
+  return(p_value)
+}
+
+# Convert the universe gene names to lowercase
+universe <- tolower(mydata$universe)
+
+# Define the gene lists
+lists <- list(
+  t48H_Up_RIF1KO = tolower(na.omit(mydata$t48H_Up_RIF1KO)),
+  t48H_Down_RIF1KO = tolower(na.omit(mydata$t48H_Down_RIF1KO)),
+  t72H_Up_RIF1KO = tolower(na.omit(mydata$t72H_Up_RIF1KO)),
+  t72H_Down_RIF1KO = tolower(na.omit(mydata$t72H_Down_RIF1KO)), # Fixed: Added missing parenthesis
+  t96H_Up_RIF1KO = tolower(na.omit(mydata$t96H_Up_RIF1KO)),
+  t96H_Down_RIF1KO = tolower(na.omit(mydata$t96H_Down_RIF1KO)),
+  Activated_Up = tolower(na.omit(mydata$Activated_Up)),
+  Activated_Down = tolower(na.omit(mydata$Activated_Down)),
+  PB_Up = tolower(na.omit(mydata$PB_Up)),
+  PB_Down = tolower(na.omit(mydata$PB_Down)),
+  PC_Up = tolower(na.omit(mydata$PC_Up)),
+  PC_Down = tolower(na.omit(mydata$PC_Down))
+)
+
+
+
+# Remove empty values from gene lists
+lists <- lapply(lists, function(x) x[x != ""])
+
+# Perform pairwise hypergeometric tests and apply Bonferroni correction
+results <- list()
+num_lists <- length(lists)
+p_values <- numeric()
+counter <- 1
+
+for (i in 1:(num_lists-1)) {
+  for (j in (i+1):num_lists) {
+    list1_name <- names(lists)[i]
+    list2_name <- names(lists)[j]
+    p_value <- hypergeometric_test(lists[[i]], lists[[j]], universe)
+    p_values <- c(p_values, p_value)
+    results[[counter]] <- list(list1 = list1_name, list2 = list2_name, p_value = p_value)
+    counter <- counter + 1
+  }
+}
+
+# Apply Bonferroni correction
+p_values_adj <- p.adjust(p_values, method = "bonferroni")
+
+# Print adjusted p-values with list pair names
+cat("Pairwise Hypergeometric Test Results (Bonferroni-adjusted p-values):\n")
+for (i in 1:length(p_values_adj)) {
+  list1_name <- results[[i]]$list1
+  list2_name <- results[[i]]$list2
+  p_value_adj <- p_values_adj[i]
+  cat(list1_name, "vs", list2_name, ": ", p_value_adj, "\n")
+}
+
+
+# After calculating log_p_values_adj and pairwise_comp
+
+# Create a data frame with the pairwise comparison names and their -log10 adjusted p-values
+results_df <- data.frame(
+  Pairwise_Comparison = pairwise_comp,
+  Log10_Adj_P_Value = log_p_values_adj
+)
+
+# Export the results to a CSV file, including column names
+write.csv(results_df, "/Users/probio/Desktop/Hypergeometic\ test/my_data_result_2024.csv", row.names = FALSE)
+
+
+
+#===============
+# Calculate -log10(p_values_adj)
+log_p_values_adj <- -log10(p_values_adj)
+
+# Pairwise comparison names
+pairwise_comp <- paste(sapply(results, function(x) x$list1), "vs", sapply(results, function(x) x$list2))
+
+# Plot -log10(p_values_adj)
+plot(log_p_values_adj, 
+     main = "Pairwise Hypergeometric Test Results",
+     xlab = "Pairwise comparisons",
+     ylab = "-log10(Adjusted P-values)",
+     xaxt = "n",  # don't show the x-axis labels by default
+     pch = 19,    # use solid circle as point character
+     col = "blue" # color points blue
+)
+
+# Custom x-axis labels
+axis(1, at = 1:length(pairwise_comp), labels = pairwise_comp, las = 2)  # 'las = 2' makes the labels perpendicular to the axis
+
+```
